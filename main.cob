@@ -1,0 +1,112 @@
+>>SOURCE FORMAT FREE
+IDENTIFICATION DIVISION.
+PROGRAM-ID. BANKPROCESSOR.
+
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "input.csv"
+        ORGANIZATION IS LINE SEQUENTIAL.
+
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-LINE                 PIC X(100).
+
+WORKING-STORAGE SECTION.
+01 EOF-FLAG                   PIC X VALUE "N".
+01 IS-FIRST-LINE              PIC X VALUE "Y".
+
+01 WS-ACCOUNT-ID-TEXT         PIC X(10).
+01 WS-AMOUNT-TEXT             PIC X(10).
+01 WS-TYPE                    PIC X(20).
+
+01 WS-ACCOUNT-ID              PIC 9(3) VALUE 0.
+01 WS-AMOUNT                  PIC 9(5) VALUE 0.
+
+01 WS-BALANCE-1               PIC S9(6) VALUE 0.
+01 WS-BALANCE-2               PIC S9(6) VALUE 0.
+01 WS-BALANCE-3               PIC S9(6) VALUE 0.
+
+PROCEDURE DIVISION.
+    OPEN INPUT INPUT-FILE
+
+    PERFORM UNTIL EOF-FLAG = "Y"
+        READ INPUT-FILE
+            AT END
+                MOVE "Y" TO EOF-FLAG
+            NOT AT END
+                IF IS-FIRST-LINE = "Y"
+                    MOVE "N" TO IS-FIRST-LINE
+                ELSE
+                    PERFORM PROCESS-LINE
+                END-IF
+        END-READ
+    END-PERFORM
+
+    CLOSE INPUT-FILE
+
+    DISPLAY "------------------------------"
+    DISPLAY "Compte 1 | Solde final : " WS-BALANCE-1
+    DISPLAY "Compte 2 | Solde final : " WS-BALANCE-2
+    DISPLAY "Compte 3 | Solde final : " WS-BALANCE-3
+
+    STOP RUN.
+
+PROCESS-LINE.
+    MOVE SPACES TO WS-ACCOUNT-ID-TEXT
+    MOVE SPACES TO WS-AMOUNT-TEXT
+    MOVE SPACES TO WS-TYPE
+    MOVE 0 TO WS-ACCOUNT-ID
+    MOVE 0 TO WS-AMOUNT
+
+    UNSTRING INPUT-LINE
+        DELIMITED BY ","
+        INTO WS-ACCOUNT-ID-TEXT
+             WS-AMOUNT-TEXT
+             WS-TYPE
+    END-UNSTRING
+
+    MOVE FUNCTION NUMVAL(FUNCTION TRIM(WS-ACCOUNT-ID-TEXT))
+        TO WS-ACCOUNT-ID
+
+    MOVE FUNCTION NUMVAL(FUNCTION TRIM(WS-AMOUNT-TEXT))
+        TO WS-AMOUNT
+
+    DISPLAY "Compte: " WS-ACCOUNT-ID
+            " | Montant: " WS-AMOUNT
+            " | Type: " FUNCTION TRIM(WS-TYPE)
+
+    IF FUNCTION TRIM(WS-TYPE) = "deposit"
+        PERFORM APPLY-DEPOSIT
+    ELSE
+        IF FUNCTION TRIM(WS-TYPE) = "withdraw"
+            PERFORM APPLY-WITHDRAW
+        END-IF
+    END-IF.
+
+APPLY-DEPOSIT.
+    IF WS-ACCOUNT-ID = 1
+        ADD WS-AMOUNT TO WS-BALANCE-1
+    ELSE
+        IF WS-ACCOUNT-ID = 2
+            ADD WS-AMOUNT TO WS-BALANCE-2
+        ELSE
+            IF WS-ACCOUNT-ID = 3
+                ADD WS-AMOUNT TO WS-BALANCE-3
+            END-IF
+        END-IF
+    END-IF.
+
+APPLY-WITHDRAW.
+    IF WS-ACCOUNT-ID = 1
+        SUBTRACT WS-AMOUNT FROM WS-BALANCE-1
+    ELSE
+        IF WS-ACCOUNT-ID = 2
+            SUBTRACT WS-AMOUNT FROM WS-BALANCE-2
+        ELSE
+            IF WS-ACCOUNT-ID = 3
+                SUBTRACT WS-AMOUNT FROM WS-BALANCE-3
+            END-IF
+        END-IF
+    END-IF.

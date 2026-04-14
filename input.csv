@@ -1,0 +1,7 @@
+account_id,amount,type
+1,100,deposit
+1,50,withdraw
+2,200,deposit
+2,25,withdraw
+1,30,deposit
+3,500,deposit
