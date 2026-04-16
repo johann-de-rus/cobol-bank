@@ -2,6 +2,12 @@ account_id,amount,type
 1,100,deposit
 1,50,withdraw
 2,200,deposit
-2,25,withdraw
-1,30,deposit
-3,500,deposit
+X,25,withdraw
+3,,deposit
+4,80,payment
+5,120,deposit
+,20,withdraw
+
+6,10,withdraw
+999,500,deposit
+999,100,withdraw

@@ -3,3 +3,6 @@ main
 
 # macOS
 .DS_Store
+
+# COBOl
+_superbol/
