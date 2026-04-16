@@ -35,6 +35,11 @@ WORKING-STORAGE SECTION.
 01 WS-IS-VALID                    PIC X VALUE "Y".
 01 WS-ERROR-MESSAGE               PIC X(100).
 
+01 WS-DEPOSIT-COUNT               PIC 9(5) VALUE 0.
+01 WS-WITHDRAW-COUNT              PIC 9(5) VALUE 0.
+01 WS-TOTAL-DEPOSIT               PIC 9(9) VALUE 0.
+01 WS-TOTAL-WITHDRAW              PIC 9(9) VALUE 0.
+
 01 WS-ACCOUNTS.
    05 WS-ACCOUNT-ENTRY OCCURS 100 TIMES.
       10 WS-STORED-ACCOUNT-ID     PIC 9(5).
@@ -51,6 +56,7 @@ PROCEDURE DIVISION.
                 IF IS-FIRST-LINE = "Y"
                     MOVE "N" TO IS-FIRST-LINE
                 ELSE
+                    ADD 1 TO WS-LINE-COUNT
                     PERFORM PROCESS-LINE
                 END-IF
         END-READ
@@ -137,8 +143,12 @@ PROCESS-LINE.
     IF WS-IS-VALID = "Y"
         IF FUNCTION TRIM(WS-TYPE) = "deposit"
             ADD WS-AMOUNT TO WS-STORED-BALANCE(WS-FOUND-INDEX)
+            ADD 1 TO WS-DEPOSIT-COUNT
+            ADD WS-AMOUNT TO WS-TOTAL-DEPOSIT
         ELSE
             SUBTRACT WS-AMOUNT FROM WS-STORED-BALANCE(WS-FOUND-INDEX)
+            ADD 1 TO WS-WITHDRAW-COUNT
+            ADD WS-AMOUNT TO WS-TOTAL-WITHDRAW
         END-IF
 
         ADD 1 TO WS-PROCESSED-COUNT
@@ -178,13 +188,19 @@ FIND-OR-CREATE-ACCOUNT.
     END-IF.
 
 DISPLAY-REPORT.
+    DISPLAY "========================================"
+    DISPLAY "           RAPPORT FINAL"
+    DISPLAY "========================================"
+    DISPLAY "Lignes lues         : " WS-LINE-COUNT
+    DISPLAY "Transactions OK     : " WS-PROCESSED-COUNT
+    DISPLAY "Erreurs             : " WS-ERROR-COUNT
+    DISPLAY "Comptes distincts   : " WS-ACCOUNT-COUNT
+    DISPLAY "Depots              : " WS-DEPOSIT-COUNT
+    DISPLAY "Retraits            : " WS-WITHDRAW-COUNT
+    DISPLAY "Total depose        : " WS-TOTAL-DEPOSIT
+    DISPLAY "Total retire        : " WS-TOTAL-WITHDRAW
     DISPLAY "----------------------------------------"
-    DISPLAY "RAPPORT FINAL"
-    DISPLAY "----------------------------------------"
-    DISPLAY "Lignes lues       : " WS-LINE-COUNT
-    DISPLAY "Transactions OK   : " WS-PROCESSED-COUNT
-    DISPLAY "Erreurs           : " WS-ERROR-COUNT
-    DISPLAY "Comptes distincts : " WS-ACCOUNT-COUNT
+    DISPLAY "SOLDES PAR COMPTE"
     DISPLAY "----------------------------------------"
 
     PERFORM VARYING WS-SEARCH-INDEX FROM 1 BY 1
@@ -193,4 +209,6 @@ DISPLAY-REPORT.
                 WS-STORED-ACCOUNT-ID(WS-SEARCH-INDEX)
                 " | Solde final : "
                 WS-STORED-BALANCE(WS-SEARCH-INDEX)
-    END-PERFORM.
+    END-PERFORM
+
+    DISPLAY "========================================".
