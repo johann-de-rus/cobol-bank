@@ -40,10 +40,39 @@ WORKING-STORAGE SECTION.
 01 WS-TOTAL-DEPOSIT               PIC 9(9) VALUE 0.
 01 WS-TOTAL-WITHDRAW              PIC 9(9) VALUE 0.
 
+01 WS-REPORT-LINE.
+   05 FILLER                      PIC X(7)  VALUE "Compte ".
+   05 WS-RPT-ACCOUNT-ID           PIC Z(4)9.
+   05 FILLER                      PIC X(16) VALUE " | Solde final : ".
+   05 WS-RPT-BALANCE              PIC -Z(8)9.
+
+01 WS-OK-LINE.
+   05 FILLER                  PIC X(5)  VALUE "OK   |".
+   05 FILLER                  PIC X(9)  VALUE " Compte: ".
+   05 WS-OK-ACCOUNT-ID        PIC Z(4)9.
+   05 FILLER                  PIC X(12) VALUE " | Montant: ".
+   05 WS-OK-AMOUNT            PIC Z(6)9.
+   05 FILLER                  PIC X(9)  VALUE " | Type: ".
+   05 WS-OK-TYPE              PIC X(20).
+
+01 WS-ERR-LINE.
+   05 FILLER                  PIC X(5)   VALUE "ERR  |".
+   05 FILLER                  PIC X(8)   VALUE " Ligne ".
+   05 WS-ERR-LINE-NO          PIC Z(4)9.
+   05 FILLER                  PIC X(3)   VALUE " | ".
+   05 WS-ERR-MSG              PIC X(25).
+   05 FILLER                  PIC X(12)  VALUE " | Contenu: ".
+   05 WS-ERR-CONTENT          PIC X(80).
+
 01 WS-ACCOUNTS.
    05 WS-ACCOUNT-ENTRY OCCURS 100 TIMES.
       10 WS-STORED-ACCOUNT-ID     PIC 9(5).
       10 WS-STORED-BALANCE        PIC S9(9) VALUE 0.
+
+01 WS-STAT-LINE.
+   05 WS-STAT-LABEL               PIC X(20).
+   05 FILLER                      PIC X(3) VALUE " : ".
+   05 WS-STAT-VALUE               PIC Z(8)9.
 
 PROCEDURE DIVISION.
     OPEN INPUT INPUT-FILE
@@ -153,14 +182,17 @@ PROCESS-LINE.
 
         ADD 1 TO WS-PROCESSED-COUNT
 
-        DISPLAY "OK   | Compte: " WS-ACCOUNT-ID
-                " | Montant: " WS-AMOUNT
-                " | Type: " FUNCTION TRIM(WS-TYPE)
+        MOVE WS-ACCOUNT-ID TO WS-OK-ACCOUNT-ID
+        MOVE WS-AMOUNT TO WS-OK-AMOUNT
+        MOVE FUNCTION TRIM(WS-TYPE) TO WS-OK-TYPE
+
+        DISPLAY WS-OK-LINE
     ELSE
         ADD 1 TO WS-ERROR-COUNT
-        DISPLAY "ERR  | Ligne " WS-LINE-COUNT
-                " | " FUNCTION TRIM(WS-ERROR-MESSAGE)
-                " | Contenu: " FUNCTION TRIM(INPUT-LINE)
+        MOVE WS-LINE-COUNT TO WS-ERR-LINE-NO
+        MOVE FUNCTION TRIM(WS-ERROR-MESSAGE) TO WS-ERR-MSG
+        MOVE FUNCTION TRIM(INPUT-LINE) TO WS-ERR-CONTENT
+        DISPLAY WS-ERR-LINE
     END-IF.
 
 FIND-OR-CREATE-ACCOUNT.
@@ -191,24 +223,50 @@ DISPLAY-REPORT.
     DISPLAY "========================================"
     DISPLAY "           RAPPORT FINAL"
     DISPLAY "========================================"
-    DISPLAY "Lignes lues         : " WS-LINE-COUNT
-    DISPLAY "Transactions OK     : " WS-PROCESSED-COUNT
-    DISPLAY "Erreurs             : " WS-ERROR-COUNT
-    DISPLAY "Comptes distincts   : " WS-ACCOUNT-COUNT
-    DISPLAY "Depots              : " WS-DEPOSIT-COUNT
-    DISPLAY "Retraits            : " WS-WITHDRAW-COUNT
-    DISPLAY "Total depose        : " WS-TOTAL-DEPOSIT
-    DISPLAY "Total retire        : " WS-TOTAL-WITHDRAW
+    
+    MOVE "Lignes lues" TO WS-STAT-LABEL
+    MOVE WS-LINE-COUNT TO WS-STAT-VALUE
+    DISPLAY WS-STAT-LINE
+
+    MOVE "Transactions OK" TO WS-STAT-LABEL
+    MOVE WS-PROCESSED-COUNT TO WS-STAT-VALUE
+    DISPLAY WS-STAT-LINE
+
+    MOVE "Erreurs" TO WS-STAT-LABEL
+    MOVE WS-ERROR-COUNT TO WS-STAT-VALUE
+    DISPLAY WS-STAT-LINE
+
+    MOVE "Comptes distincts" TO WS-STAT-LABEL
+    MOVE WS-ACCOUNT-COUNT TO WS-STAT-VALUE
+    DISPLAY WS-STAT-LINE
+
+    MOVE "Depots" TO WS-STAT-LABEL
+    MOVE WS-DEPOSIT-COUNT TO WS-STAT-VALUE
+    DISPLAY WS-STAT-LINE
+
+    MOVE "Retraits" TO WS-STAT-LABEL
+    MOVE WS-WITHDRAW-COUNT TO WS-STAT-VALUE
+    DISPLAY WS-STAT-LINE
+
+    MOVE "Total depose" TO WS-STAT-LABEL
+    MOVE WS-TOTAL-DEPOSIT TO WS-STAT-VALUE
+    DISPLAY WS-STAT-LINE
+
+    MOVE "Total retire" TO WS-STAT-LABEL
+    MOVE WS-TOTAL-WITHDRAW TO WS-STAT-VALUE
+    DISPLAY WS-STAT-LINE
+
     DISPLAY "----------------------------------------"
     DISPLAY "SOLDES PAR COMPTE"
     DISPLAY "----------------------------------------"
 
     PERFORM VARYING WS-SEARCH-INDEX FROM 1 BY 1
         UNTIL WS-SEARCH-INDEX > WS-ACCOUNT-COUNT
-        DISPLAY "Compte "
-                WS-STORED-ACCOUNT-ID(WS-SEARCH-INDEX)
-                " | Solde final : "
-                WS-STORED-BALANCE(WS-SEARCH-INDEX)
+        MOVE WS-STORED-ACCOUNT-ID(WS-SEARCH-INDEX)
+            TO WS-RPT-ACCOUNT-ID
+        MOVE WS-STORED-BALANCE(WS-SEARCH-INDEX)
+            TO WS-RPT-BALANCE
+        DISPLAY WS-REPORT-LINE
     END-PERFORM
 
     DISPLAY "========================================".
